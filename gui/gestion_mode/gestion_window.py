@@ -311,6 +311,12 @@ class GestionWindow(BaseWindow):
     def update_shortcut_in_xml(self, command_name, old_shortcut, new_shortcut):
         """Met à jour un raccourci dans le fichier XML"""
         try:
+            # Vérifier d'abord si le nouveau raccourci existe déjà dans tout le fichier XML
+            shortcut_exists, category, cmd = self.is_shortcut_already_used(new_shortcut, exclude_command=command_name)
+            if shortcut_exists:
+                QMessageBox.warning(self, "Doublon", f"Ce raccourci est déjà utilisé par la commande '{cmd}' dans la catégorie '{category}'")
+                return
+                
             # Chercher la commande dans la catégorie actuelle
             xpath_query = f".//item[string[@name='Name'][@value='{self.current_category}']]"
             category_items = self.xml_root.xpath(xpath_query)
@@ -391,9 +397,61 @@ class GestionWindow(BaseWindow):
                     # Recharger la liste des commandes pour mettre à jour l'affichage
                     self.load_commands()
     
+    def is_shortcut_already_used(self, new_shortcut, exclude_command=None):
+        """Vérifie si un raccourci est déjà utilisé dans tout le fichier XML
+        
+        Args:
+            new_shortcut (str): Le raccourci à vérifier
+            exclude_command (str, optional): Nom de la commande à exclure de la vérification
+            
+        Returns:
+            tuple: (bool, str, str) - (Existe déjà, Catégorie, Commande)
+        """
+        if self.xml_root is None or not new_shortcut:
+            return False, "", ""
+            
+        # Parcourir toutes les catégories
+        for category_item in self.xml_root.xpath(".//item[string[@name='Name']]"):
+            category_name = category_item.xpath("./string[@name='Name']/@value")
+            if not category_name:
+                continue
+                
+            category_name = category_name[0]
+            
+            # Parcourir toutes les commandes de cette catégorie
+            for command_item in category_item.xpath("./list[@name='Commands']/item"):
+                command_name = command_item.xpath("./string[@name='Name']/@value")
+                if not command_name:
+                    continue
+                    
+                command_name = command_name[0]
+                
+                # Si on a spécifié une commande à exclure, on la saute
+                if exclude_command and command_name == exclude_command and category_name == self.current_category:
+                    continue
+                
+                # Vérifier raccourci simple
+                key_elem = command_item.xpath("./string[@name='Key']")
+                if len(key_elem) > 0 and key_elem[0].get("value") == new_shortcut:
+                    return True, category_name, command_name
+                
+                # Vérifier liste de raccourcis
+                key_list = command_item.xpath("./list[@name='Key']/item")
+                for key_item in key_list:
+                    if key_item.get("value") == new_shortcut:
+                        return True, category_name, command_name
+        
+        return False, "", ""
+
     def add_shortcut_to_xml(self, command_name, new_shortcut):
         """Ajoute un raccourci dans le fichier XML"""
         try:
+            # Vérifier d'abord si le raccourci existe déjà dans tout le fichier XML
+            shortcut_exists, category, cmd = self.is_shortcut_already_used(new_shortcut, exclude_command=command_name)
+            if shortcut_exists:
+                QMessageBox.warning(self, "Doublon", f"Ce raccourci est déjà utilisé par la commande '{cmd}' dans la catégorie '{category}'")
+                return False
+
             # Chercher la commande dans la catégorie actuelle
             xpath_query = f".//item[string[@name='Name'][@value='{self.current_category}']]"
             category_items = self.xml_root.xpath(xpath_query)
@@ -412,37 +470,27 @@ class GestionWindow(BaseWindow):
                 
             command_item = command_items[0]
             
-            # Vérifier si le raccourci existe déjà pour cette commande
+            # Vérifier si le raccourci existe déjà pour cette commande (simple ou liste)
             key_elem = command_item.xpath("./string[@name='Key']")
-            if key_elem and key_elem[0].get("value") == new_shortcut:
-                QMessageBox.warning(self, "Doublon", f"Ce raccourci existe déjà pour cette commande.")
-                return False
             key_list = command_item.xpath("./list[@name='Key']")
-            if key_list:
-                for key_item in key_list[0].xpath("./item"):
-                    if key_item.get("value") == new_shortcut:
-                        QMessageBox.warning(self, "Doublon", f"Ce raccourci existe déjà pour cette commande.")
-                        return False
             
             # Ajout du raccourci
             if key_elem:
                 # Il y a déjà un raccourci simple, le convertir en liste
                 old_shortcut = key_elem[0].get("value")
-                # Supprimer l'ancien élément string
                 parent = key_elem[0].getparent()
                 parent.remove(key_elem[0])
-                # Créer un nouvel élément list
                 key_list_elem = lxml_etree.SubElement(command_item, "list", name="Key", type="string")
                 # Ajouter l'ancien raccourci comme premier item
                 lxml_etree.SubElement(key_list_elem, "item", value=old_shortcut)
-                # Ajouter le nouveau raccourci comme deuxième item
+                # Ajouter le nouveau raccourci
                 lxml_etree.SubElement(key_list_elem, "item", value=new_shortcut)
             elif key_list:
                 # Ajouter à la liste existante
                 lxml_etree.SubElement(key_list[0], "item", value=new_shortcut)
             else:
-                # Pas de raccourci du tout, créer un simple
-                lxml_etree.SubElement(command_item, "string", name="Key", value=new_shortcut)
+                # Aucun raccourci existant, créer un raccourci simple
+                lxml_etree.SubElement(command_item, "string", name="Key", value=new_shortcut, wide="true")
             # Le fichier est maintenant modifié, activer la sauvegarde
             self.action_save.setEnabled(True)
             return True
