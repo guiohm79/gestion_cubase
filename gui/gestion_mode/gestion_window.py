@@ -2,8 +2,10 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                             QTreeWidget, QTreeWidgetItem, QTableWidget, 
                             QTableWidgetItem, QPushButton, QSplitter, 
                             QHeaderView, QMessageBox, QFileDialog,
-                            QToolBar, QAction, QDialog, QLineEdit, QFormLayout)
+                            QToolBar, QAction, QDialog, QLineEdit, QFormLayout, QKeySequenceEdit)
 from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QKeySequence
+
 from lxml import etree as lxml_etree
 import os
 
@@ -230,8 +232,18 @@ class GestionWindow(BaseWindow):
         dialog.setWindowTitle(f"Modifier le raccourci pour {command_name}")
         layout = QFormLayout(dialog)
         
-        shortcut_edit = QLineEdit(current_shortcut)
-        layout.addRow("Nouveau raccourci:", shortcut_edit)
+        # On utilise QKeySequenceEdit au lieu de QLineEdit
+        shortcut_edit = QKeySequenceEdit()
+        
+        # On convertit le raccourci Cubase en QKeySequence
+        if current_shortcut:
+            # Format Cubase: "Ctrl+R" -> format Qt: "Ctrl+R"
+            # C'est assez similaire mais il peut y avoir des différences
+            # qu'on pourrait gérer avec une fonction de conversion plus complexe
+            shortcut_edit.setKeySequence(QKeySequence(current_shortcut))
+        
+        layout.addRow("Appuie sur les touches du nouveau raccourci:", shortcut_edit)
+        layout.addRow(QLabel("(ESC pour effacer)"))
         
         buttons = QHBoxLayout()
         ok_button = QPushButton("OK")
@@ -244,13 +256,58 @@ class GestionWindow(BaseWindow):
         cancel_button.clicked.connect(dialog.reject)
         
         if dialog.exec_() == QDialog.Accepted:
-            new_shortcut = shortcut_edit.text()
+            # Récupérer la séquence de touches et la convertir en texte
+            key_sequence = shortcut_edit.keySequence()
+            new_shortcut = key_sequence.toString()
+            
             if new_shortcut != current_shortcut:
                 # Mettre à jour l'affichage
                 item.setText(new_shortcut)
                 # Mettre à jour le XML
                 self.update_shortcut_in_xml(command_name, current_shortcut, new_shortcut)
-    
+
+    def save_file(self):
+        """Sauvegarde les modifications dans le fichier XML à la mode bucheron"""
+        if self.current_file and self.xml_tree is not None:
+            try:
+                # Proposer d'enregistrer sous un nouveau nom
+                file_path, _ = QFileDialog.getSaveFileName(
+                    self, "Enregistrer le fichier de raccourcis", self.current_file,
+                    "Fichiers XML (*.xml)")
+                
+                if not file_path:
+                    return
+                
+                # Débugage : Afficher l'arbre XML en console (en commentaire)
+                # print("Contenu de l'arbre XML avant sauvegarde:", lxml_etree.tostring(self.xml_root, pretty_print=True, encoding='unicode'))
+                
+                # Créer un nouvel objet ElementTree pour la sauvegarde
+                # (parfois ça règle les problèmes bizarres)
+                tree_to_save = lxml_etree.ElementTree(self.xml_root)
+                
+                # Sauvegarde BRUTALE avec mode direct
+                with open(file_path, 'wb') as f:
+                    # L'en-tête XML manuellement pour être sûr
+                    f.write(b'<?xml version="1.0" encoding="utf-8"?>\n')
+                    # Sortie directe en UTF-8
+                    f.write(lxml_etree.tostring(self.xml_root, pretty_print=True, xml_declaration=False, encoding='utf-8'))
+                
+                # Vérifier que le fichier existe et a une taille > 0
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    # Mettre à jour le nom du fichier courant si nécessaire
+                    if file_path != self.current_file:
+                        self.current_file = file_path
+                        self.title_label.setText(f"Éditeur de raccourcis - {os.path.basename(file_path)}")
+                    
+                    QMessageBox.information(self, "Succès", f"Fichier sauvegardé : {file_path} ({os.path.getsize(file_path)} octets)")
+                else:
+                    QMessageBox.warning(self, "Problème", "Le fichier a été créé mais semble vide. Vérifie les permissions.")
+                
+            except Exception as e:
+                QMessageBox.warning(self, "Erreur", f"Impossible d'enregistrer le fichier: {str(e)}")
+                # Afficher l'erreur en console pour debug
+                print(f"ERREUR SAUVEGARDE: {str(e)}")
+
     def update_shortcut_in_xml(self, command_name, old_shortcut, new_shortcut):
         """Met à jour un raccourci dans le fichier XML"""
         try:
@@ -308,9 +365,10 @@ class GestionWindow(BaseWindow):
         dialog.setWindowTitle(f"Ajouter un raccourci pour {command_name}")
         layout = QFormLayout(dialog)
         
-        shortcut_edit = QLineEdit()
-        shortcut_edit.setPlaceholderText("Ex: Ctrl+Shift+F")
-        layout.addRow("Nouveau raccourci:", shortcut_edit)
+        # On utilise QKeySequenceEdit pour capturer les touches directement
+        shortcut_edit = QKeySequenceEdit()
+        layout.addRow("Appuie sur les touches du raccourci:", shortcut_edit)
+        layout.addRow(QLabel("(ESC pour effacer)"))
         
         buttons = QHBoxLayout()
         ok_button = QPushButton("OK")
@@ -323,7 +381,10 @@ class GestionWindow(BaseWindow):
         cancel_button.clicked.connect(dialog.reject)
         
         if dialog.exec_() == QDialog.Accepted:
-            new_shortcut = shortcut_edit.text()
+            # Récupérer la séquence de touches et la convertir en texte
+            key_sequence = shortcut_edit.keySequence()
+            new_shortcut = key_sequence.toString()
+            
             if new_shortcut:
                 # Ajouter le raccourci au XML
                 if self.add_shortcut_to_xml(command_name, new_shortcut):
@@ -405,9 +466,9 @@ class GestionWindow(BaseWindow):
             
         # Confirmer la suppression
         reply = QMessageBox.question(self, "Confirmation", 
-                                     f"Voulez-vous vraiment supprimer le raccourci pour {command_name} ?",
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                                     
+                                    f"Voulez-vous vraiment supprimer le raccourci pour {command_name} ?",
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                    
         if reply == QMessageBox.Yes:
             # Supprimer le raccourci du XML
             if self.remove_shortcut_from_xml(command_name):
@@ -453,28 +514,3 @@ class GestionWindow(BaseWindow):
         except Exception as e:
             QMessageBox.warning(self, "Erreur", f"Erreur lors de la suppression du raccourci: {str(e)}")
             return False
-    
-    def save_file(self):
-        """Sauvegarde les modifications dans le fichier XML"""
-        if self.current_file and self.xml_tree is not None:
-            try:
-                # Proposer d'enregistrer sous un nouveau nom
-                file_path, _ = QFileDialog.getSaveFileName(
-                    self, "Enregistrer le fichier de raccourcis", self.current_file,
-                    "Fichiers XML (*.xml)")
-                
-                if not file_path:
-                    return
-                    
-                # Sauvegarder l'arbre XML
-                self.xml_tree.write(file_path, encoding="utf-8", xml_declaration=True, pretty_print=True)
-                
-                # Mettre à jour le nom du fichier courant si nécessaire
-                if file_path != self.current_file:
-                    self.current_file = file_path
-                    self.title_label.setText(f"Éditeur de raccourcis - {os.path.basename(file_path)}")
-                
-                QMessageBox.information(self, "Succès", "Fichier enregistré avec succès !")
-                
-            except Exception as e:
-                QMessageBox.warning(self, "Erreur", f"Impossible d'enregistrer le fichier: {str(e)}")
