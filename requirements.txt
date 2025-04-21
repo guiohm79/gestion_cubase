@@ -1,0 +1,13 @@
+# Dépendances principales
+PyQt5==5.15.7
+PyQt5-Qt5>=5.15.2
+mutagen==1.46.0
+pygame==2.5.2
+
+
+# Dépendances pour les améliorations futures
+pandas>=1.5.3        # Pour l'analyse de données et la gestion des métadonnées
+numpy>=1.24.3        # Pour les calculs numériques
+matplotlib>=3.7.1    # Pour la visualisation de données (spectrogrammes, etc.)
+loguru>=0.7.0        # Pour une journalisation améliorée
+QDarkStyle>=3.1.0    # Pour un thème sombre amélioré

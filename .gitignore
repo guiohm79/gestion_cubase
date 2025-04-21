@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Environnements virtuels
+venv/
+.env/
+.venv/
+ENV/
+
+# Fichiers de configuration utilisateur
+*.sublime-workspace
+*.sublime-project
+*.vscode/
+.idea/
+
+# Fichiers temporaires/backup
+*.bak
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Fichiers spécifiques à PyQt/PySide
+*.qrc
+*.ui
+
+# Fichiers de logs
+*.log
+
+# Fichiers de tests ou de debug
+.test/
+debug/
+
+# Données et préférences de l'application
+preferences.json
+metadata.json
+notes.txt
+
+# Dossiers de build/distribution
+build/
+dist/
+*.egg-info/
+
+# Fichiers de déploiement
+.env.local
+.env.*.local
+
+# Fichiers de l'utilisateur
+*.user
+
+# Autres fichiers à ignorer
+# Ajoutez ici tout fichier/dossier spécifique à votre usage
