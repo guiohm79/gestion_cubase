@@ -66,17 +66,41 @@ class BaseWindow(QMainWindow):
         # Action pour basculer entre les modes
         self.toolbar.addSeparator()
         from config.constants import MODE_TRI, MODE_WORKSPACE
+        # Ajout du mode gestion
+        MODE_GESTION = "gestion"
         current_mode = self.__class__.__name__
+        
+        # Créer les actions pour chaque mode
         if "SortWindow" in current_mode:
-            self.action_switch_mode = QAction("Passer en mode Espace de Travail", self)
-            self.action_switch_mode.setToolTip("Basculer vers le mode Espace de Travail")
-            self.next_mode = MODE_WORKSPACE
-        else:
-            self.action_switch_mode = QAction("Passer en mode Tri", self)
-            self.action_switch_mode.setToolTip("Basculer vers le mode Tri (multi-sources)")
-            self.next_mode = MODE_TRI
-        self.action_switch_mode.triggered.connect(self.switch_mode)
-        self.toolbar.addAction(self.action_switch_mode)
+            self.action_switch_workspace = QAction("Passer en mode Espace de Travail", self)
+            self.action_switch_workspace.setToolTip("Basculer vers le mode Espace de Travail")
+            self.action_switch_workspace.triggered.connect(lambda: self.switch_mode(MODE_WORKSPACE))
+            self.toolbar.addAction(self.action_switch_workspace)
+            
+            self.action_switch_gestion = QAction("Passer en mode Gestion", self)
+            self.action_switch_gestion.setToolTip("Basculer vers le mode Gestion")
+            self.action_switch_gestion.triggered.connect(lambda: self.switch_mode(MODE_GESTION))
+            self.toolbar.addAction(self.action_switch_gestion)
+        elif "WorkspaceWindow" in current_mode:
+            self.action_switch_tri = QAction("Passer en mode Tri", self)
+            self.action_switch_tri.setToolTip("Basculer vers le mode Tri (multi-sources)")
+            self.action_switch_tri.triggered.connect(lambda: self.switch_mode(MODE_TRI))
+            self.toolbar.addAction(self.action_switch_tri)
+            
+            self.action_switch_gestion = QAction("Passer en mode Gestion", self)
+            self.action_switch_gestion.setToolTip("Basculer vers le mode Gestion")
+            self.action_switch_gestion.triggered.connect(lambda: self.switch_mode(MODE_GESTION))
+            self.toolbar.addAction(self.action_switch_gestion)
+        elif "GestionWindow" in current_mode:
+            self.action_switch_tri = QAction("Passer en mode Tri", self)
+            self.action_switch_tri.setToolTip("Basculer vers le mode Tri (multi-sources)")
+            self.action_switch_tri.triggered.connect(lambda: self.switch_mode(MODE_TRI))
+            self.toolbar.addAction(self.action_switch_tri)
+            
+            self.action_switch_workspace = QAction("Passer en mode Espace de Travail", self)
+            self.action_switch_workspace.setToolTip("Basculer vers le mode Espace de Travail")
+            self.action_switch_workspace.triggered.connect(lambda: self.switch_mode(MODE_WORKSPACE))
+            self.toolbar.addAction(self.action_switch_workspace)
         
         # Les classes dérivées peuvent ajouter leurs propres actions
         self.setup_specific_toolbar()
@@ -123,21 +147,22 @@ class BaseWindow(QMainWindow):
         # Accepter l'événement de fermeture
         event.accept()
     
-    def switch_mode(self):
-        """Basculer entre les modes Tri et Espace de Travail"""
+    def switch_mode(self, mode):
+        """Basculer entre les modes Tri, Espace de Travail et Gestion"""
         try:
-            print(f"Début du basculement vers le mode {self.next_mode}")
+            print(f"Début du basculement vers le mode {mode}")
             
             # Sauvegarder le mode actuel dans les paramètres
-            settings.last_mode = self.next_mode
+            settings.last_mode = mode
             settings.save()
             
             # Informer l'utilisateur du changement de mode
-            self.statusBar.showMessage(f"Basculement vers le mode {self.next_mode}...")
+            self.statusBar.showMessage(f"Basculement vers le mode {mode}...")
             
             # Créer une nouvelle fenêtre du mode approprié
             from gui.sort_mode.sort_window import SortWindow
             from gui.workspace_mode.workspace_window import WorkspaceWindow
+            from gui.gestion_mode.gestion_window import GestionWindow
             
             print(f"Classes importées avec succès")
             
@@ -146,15 +171,18 @@ class BaseWindow(QMainWindow):
             size = self.size()
             
             # Créer la nouvelle fenêtre selon le mode
-            print(f"Création de la nouvelle fenêtre pour le mode {self.next_mode}")
+            print(f"Création de la nouvelle fenêtre pour le mode {mode}")
             
             # Créer une instance de la nouvelle fenêtre sans la fermer immédiatement
-            if self.next_mode == "tri":
+            if mode == "tri":
                 new_window = SortWindow()
                 print("SortWindow créée avec succès")
-            else:  # MODE_WORKSPACE
+            elif mode == "workspace":
                 new_window = WorkspaceWindow()
                 print("WorkspaceWindow créée avec succès")
+            elif mode == "gestion":
+                new_window = GestionWindow()
+                print("GestionWindow créée avec succès")
             
             # Conserver une référence globale à la nouvelle fenêtre
             import main

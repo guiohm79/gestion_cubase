@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, 
                             QTreeWidget, QTreeWidgetItem, QTableWidget, 
                             QTableWidgetItem, QPushButton, QSplitter, 
                             QHeaderView, QMessageBox, QFileDialog)
@@ -6,34 +6,38 @@ from PyQt5.QtCore import Qt
 import xml.etree.ElementTree as ET
 import os
 
-class GestionWindow(QWidget):
+from gui.base.base_window import BaseWindow
+
+class GestionWindow(BaseWindow):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__()
         self.current_file = None
         self.xml_root = None
         self.current_category = None
         self.setup_ui()
-
-    def setup_ui(self):
-        # Layout principal
-        main_layout = QVBoxLayout()
         
+        # Mise à jour du titre
+        self.setWindowTitle("Tri Morceaux Cubase - Mode Gestion")
+
+    def setup_specific_toolbar(self):
+        """Configuration spécifique de la barre d'outils"""
+        # Action pour ouvrir un fichier
+        self.action_open = self.toolbar.addAction("Ouvrir")
+        self.action_open.triggered.connect(self.open_file)
+        
+        # Action pour sauvegarder
+        self.action_save = self.toolbar.addAction("Enregistrer")
+        self.action_save.triggered.connect(self.save_file)
+        self.action_save.setEnabled(False)
+    
+    def setup_ui(self):
         # Titre et boutons en haut
         top_layout = QHBoxLayout()
         self.title_label = QLabel("Éditeur de raccourcis Cubase")
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
         
-        self.open_button = QPushButton("Ouvrir")
-        self.open_button.clicked.connect(self.open_file)
-        
-        self.save_button = QPushButton("Enregistrer")
-        self.save_button.clicked.connect(self.save_file)
-        self.save_button.setEnabled(False)
-        
         top_layout.addWidget(self.title_label)
         top_layout.addStretch()
-        top_layout.addWidget(self.open_button)
-        top_layout.addWidget(self.save_button)
         
         # Splitter pour diviser l'écran
         self.splitter = QSplitter(Qt.Horizontal)
@@ -71,11 +75,9 @@ class GestionWindow(QWidget):
         bottom_layout.addWidget(self.remove_shortcut_btn)
         
         # Assemblage final
-        main_layout.addLayout(top_layout)
-        main_layout.addWidget(self.splitter)
-        main_layout.addLayout(bottom_layout)
-        
-        self.setLayout(main_layout)
+        self.main_layout.addLayout(top_layout)
+        self.main_layout.addWidget(self.splitter)
+        self.main_layout.addLayout(bottom_layout)
     
     def open_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -87,7 +89,7 @@ class GestionWindow(QWidget):
                 tree = ET.parse(file_path)
                 self.xml_root = tree.getroot()
                 self.load_categories()
-                self.save_button.setEnabled(True)
+                self.action_save.setEnabled(True)
                 self.add_shortcut_btn.setEnabled(True)
                 self.title_label.setText(f"Éditeur de raccourcis - {os.path.basename(file_path)}")
             except Exception as e:
