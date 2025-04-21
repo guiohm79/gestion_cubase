@@ -331,19 +331,19 @@ class GestionWindow(BaseWindow):
             
             # Mettre à jour le raccourci
             key_elem = command_item.xpath("./string[@name='Key']")
+            key_list = command_item.xpath("./list[@name='Key']")
             if key_elem:
                 # C'est un raccourci simple
                 key_elem[0].set("value", new_shortcut)
+            elif key_list:
+                # Parcourir les items pour trouver celui qui correspond à l'ancien raccourci
+                for key_item in key_list[0].xpath("./item"):
+                    if key_item.get("value") == old_shortcut:
+                        key_item.set("value", new_shortcut)
+                        break
             else:
-                # C'est une liste de raccourcis, ça se complique
-                key_list = command_item.xpath("./list[@name='Key']")
-                if key_list:
-                    # Parcourir les items pour trouver celui qui correspond à l'ancien raccourci
-                    for key_item in key_list[0].xpath("./item"):
-                        if key_item.get("value") == old_shortcut:
-                            key_item.set("value", new_shortcut)
-                            break
-            
+                # Aucun raccourci existant : créer la balise
+                lxml_etree.SubElement(command_item, "string", name="Key", value=new_shortcut, wide="true")
             # Le fichier est maintenant modifié, activer la sauvegarde
             self.action_save.setEnabled(True)
             
@@ -412,35 +412,37 @@ class GestionWindow(BaseWindow):
                 
             command_item = command_items[0]
             
-            # Vérifier si la commande a déjà un raccourci
+            # Vérifier si le raccourci existe déjà pour cette commande
             key_elem = command_item.xpath("./string[@name='Key']")
+            if key_elem and key_elem[0].get("value") == new_shortcut:
+                QMessageBox.warning(self, "Doublon", f"Ce raccourci existe déjà pour cette commande.")
+                return False
+            key_list = command_item.xpath("./list[@name='Key']")
+            if key_list:
+                for key_item in key_list[0].xpath("./item"):
+                    if key_item.get("value") == new_shortcut:
+                        QMessageBox.warning(self, "Doublon", f"Ce raccourci existe déjà pour cette commande.")
+                        return False
+            
+            # Ajout du raccourci
             if key_elem:
                 # Il y a déjà un raccourci simple, le convertir en liste
                 old_shortcut = key_elem[0].get("value")
-                
                 # Supprimer l'ancien élément string
                 parent = key_elem[0].getparent()
                 parent.remove(key_elem[0])
-                
                 # Créer un nouvel élément list
-                key_list = lxml_etree.SubElement(command_item, "list", name="Key", type="string")
-                
+                key_list_elem = lxml_etree.SubElement(command_item, "list", name="Key", type="string")
                 # Ajouter l'ancien raccourci comme premier item
-                item1 = lxml_etree.SubElement(key_list, "item", value=old_shortcut)
-                
+                lxml_etree.SubElement(key_list_elem, "item", value=old_shortcut)
                 # Ajouter le nouveau raccourci comme deuxième item
-                item2 = lxml_etree.SubElement(key_list, "item", value=new_shortcut)
-                
+                lxml_etree.SubElement(key_list_elem, "item", value=new_shortcut)
+            elif key_list:
+                # Ajouter à la liste existante
+                lxml_etree.SubElement(key_list[0], "item", value=new_shortcut)
             else:
-                # Vérifier s'il y a déjà une liste de raccourcis
-                key_list = command_item.xpath("./list[@name='Key']")
-                if key_list:
-                    # Ajouter à la liste existante
-                    lxml_etree.SubElement(key_list[0], "item", value=new_shortcut)
-                else:
-                    # Pas de raccourci du tout, créer un simple
-                    lxml_etree.SubElement(command_item, "string", name="Key", value=new_shortcut)
-            
+                # Pas de raccourci du tout, créer un simple
+                lxml_etree.SubElement(command_item, "string", name="Key", value=new_shortcut)
             # Le fichier est maintenant modifié, activer la sauvegarde
             self.action_save.setEnabled(True)
             return True
