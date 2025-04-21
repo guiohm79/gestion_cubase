@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QFileDialog,
     QGroupBox, QCheckBox, QMessageBox, QProgressBar,
     QSplitter, QTreeWidget, QTreeWidgetItem, QHeaderView,
-    QComboBox, QAction, QLineEdit, QMenu, QTextEdit, QTabWidget
+    QComboBox, QAction, QLineEdit, QMenu, QTextEdit, QTabWidget,
+    QToolBar
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon
@@ -130,15 +131,22 @@ class SortWindow(BaseWindow):
         event.accept()
     
     def setup_specific_toolbar(self):
-        """Configuration spécifique de la barre d'outils"""
+        """Configuration spécifique de l'interface"""
+        # Créer une barre d'outils pour les actions spécifiques
+        toolbar = QToolBar()
+        toolbar.setIconSize(QSize(24, 24))
+        
         # Action pour sauvegarder
         action_save = QAction("Sauvegarder", self)
         action_save.triggered.connect(self.save_selected_project)
-        self.toolbar.addAction(action_save)
+        toolbar.addAction(action_save)
+        
+        # Ajouter la barre d'outils au layout de contenu
+        self.content_layout.addWidget(toolbar)
     
     def setup_ui(self):
         """Configuration de l'interface utilisateur"""
-        # Widget central déjà créé dans BaseWindow
+        # Utiliser le layout de contenu créé dans BaseWindow
         
         # Groupe pour la sélection des dossiers
         dir_group = QGroupBox("Sélection des dossiers")
@@ -329,9 +337,9 @@ class SortWindow(BaseWindow):
         main_splitter.addWidget(details_splitter)
         main_splitter.setSizes([400, 600])
         
-        # Ajout des groupes au layout principal
-        self.main_layout.addWidget(dir_group)
-        self.main_layout.addWidget(main_splitter, 3)
+        # Assemblage final dans le layout de contenu
+        self.content_layout.addWidget(dir_group)
+        self.content_layout.addWidget(main_splitter, 1)  # Stretch pour prendre tout l'espace disponible
         
         # Connexion des signaux
         self.connect_signals()

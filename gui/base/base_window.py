@@ -10,10 +10,11 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QToolBar, QAction, QStatusBar, QLabel, QSplitter,
-    QApplication, QMessageBox
+    QApplication, QMessageBox, QTabWidget, QPushButton, 
+    QTabBar, QStyle, QStyleOption
 )
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QSize, QRect, QPoint
+from PyQt5.QtGui import QIcon, QPainter, QColor, QPen, QFont
 
 from config.constants import UI_WINDOW_TITLE, UI_MIN_WIDTH, UI_MIN_HEIGHT
 from config.settings import settings
@@ -38,9 +39,10 @@ class BaseWindow(QMainWindow):
         
         # Layout principal
         self.main_layout = QVBoxLayout(self.central_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Barre d'outils
-        self.setup_toolbar()
+        # Système d'onglets pour les modes
+        self.setup_tabs()
         
         # Barre de statut
         self.statusBar = QStatusBar()
@@ -50,75 +52,117 @@ class BaseWindow(QMainWindow):
         # Application du thème
         self.apply_theme()
     
-    def setup_toolbar(self):
-        """Configuration de la barre d'outils commune"""
-        self.toolbar = QToolBar("Barre d'outils principale")
-        self.toolbar.setIconSize(QSize(24, 24))
-        self.addToolBar(self.toolbar)
+    def setup_tabs(self):
+        """Configuration du système d'onglets pour les modes"""
+        # Création du conteneur principal
+        self.tabs_container = QWidget()
+        tabs_layout = QHBoxLayout(self.tabs_container)
+        tabs_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Action pour basculer le thème (mode sombre)
-        self.action_toggle_theme = QAction("Mode sombre", self)
-        self.action_toggle_theme.setCheckable(True)
-        self.action_toggle_theme.setChecked(settings.dark_mode)
-        self.action_toggle_theme.toggled.connect(self.toggle_theme)
-        self.toolbar.addAction(self.action_toggle_theme)
+        # Création du widget d'onglets
+        self.mode_tabs = QTabWidget()
+        self.mode_tabs.setTabPosition(QTabWidget.North)
+        self.mode_tabs.setTabsClosable(False)
+        self.mode_tabs.setMovable(False)
+        self.mode_tabs.setDocumentMode(True)  # Style plus moderne
         
-        # Action pour basculer entre les modes
-        self.toolbar.addSeparator()
+        # Ajouter les onglets pour chaque mode
         from config.constants import MODE_TRI, MODE_WORKSPACE
         # Ajout du mode gestion
         MODE_GESTION = "gestion"
-        current_mode = self.__class__.__name__
         
-        # Créer les actions pour chaque mode
+        # Déterminer le mode actuel
+        current_mode = self.__class__.__name__
+        active_index = 0
+        
+        # Créer les onglets pour chaque mode
+        tri_tab = QWidget()
+        workspace_tab = QWidget()
+        gestion_tab = QWidget()
+        
+        # Ajouter les onglets au widget
+        self.mode_tabs.addTab(tri_tab, "Tri")
+        self.mode_tabs.addTab(workspace_tab, "Espace de Travail")
+        self.mode_tabs.addTab(gestion_tab, "Gestion")
+        
+        # Définir l'onglet actif en fonction du mode actuel
         if "SortWindow" in current_mode:
-            self.action_switch_workspace = QAction("Passer en mode Espace de Travail", self)
-            self.action_switch_workspace.setToolTip("Basculer vers le mode Espace de Travail")
-            self.action_switch_workspace.triggered.connect(lambda: self.switch_mode(MODE_WORKSPACE))
-            self.toolbar.addAction(self.action_switch_workspace)
-            
-            self.action_switch_gestion = QAction("Passer en mode Gestion", self)
-            self.action_switch_gestion.setToolTip("Basculer vers le mode Gestion")
-            self.action_switch_gestion.triggered.connect(lambda: self.switch_mode(MODE_GESTION))
-            self.toolbar.addAction(self.action_switch_gestion)
+            active_index = 0
         elif "WorkspaceWindow" in current_mode:
-            self.action_switch_tri = QAction("Passer en mode Tri", self)
-            self.action_switch_tri.setToolTip("Basculer vers le mode Tri (multi-sources)")
-            self.action_switch_tri.triggered.connect(lambda: self.switch_mode(MODE_TRI))
-            self.toolbar.addAction(self.action_switch_tri)
-            
-            self.action_switch_gestion = QAction("Passer en mode Gestion", self)
-            self.action_switch_gestion.setToolTip("Basculer vers le mode Gestion")
-            self.action_switch_gestion.triggered.connect(lambda: self.switch_mode(MODE_GESTION))
-            self.toolbar.addAction(self.action_switch_gestion)
+            active_index = 1
         elif "GestionWindow" in current_mode:
-            self.action_switch_tri = QAction("Passer en mode Tri", self)
-            self.action_switch_tri.setToolTip("Basculer vers le mode Tri (multi-sources)")
-            self.action_switch_tri.triggered.connect(lambda: self.switch_mode(MODE_TRI))
-            self.toolbar.addAction(self.action_switch_tri)
-            
-            self.action_switch_workspace = QAction("Passer en mode Espace de Travail", self)
-            self.action_switch_workspace.setToolTip("Basculer vers le mode Espace de Travail")
-            self.action_switch_workspace.triggered.connect(lambda: self.switch_mode(MODE_WORKSPACE))
-            self.toolbar.addAction(self.action_switch_workspace)
+            active_index = 2
+        
+        self.mode_tabs.setCurrentIndex(active_index)
+        
+        # Connecter le changement d'onglet au changement de mode
+        self.mode_tabs.currentChanged.connect(self.on_tab_changed)
+        
+        # Ajouter le widget d'onglets au layout
+        tabs_layout.addWidget(self.mode_tabs, 1)  # Stretch pour prendre la majorité de l'espace
+        
+        # Bouton de thème à droite
+        self.theme_button = QPushButton()
+        self.theme_button.setObjectName("theme_button")  # Identifiant pour le style CSS
+        self.theme_button.setFixedSize(32, 32)
+        self.theme_button.setCheckable(True)
+        self.theme_button.setChecked(settings.dark_mode)
+        self.theme_button.clicked.connect(self.toggle_theme)
+        self.update_theme_button_icon()
+        
+        # Ajouter le bouton de thème au layout
+        tabs_layout.addWidget(self.theme_button)
+        
+        # Ajouter le conteneur au layout principal
+        self.main_layout.addWidget(self.tabs_container)
+        
+        # Ajouter un widget pour contenir le contenu spécifique à chaque mode
+        self.content_widget = QWidget()
+        self.content_layout = QVBoxLayout(self.content_widget)
+        self.main_layout.addWidget(self.content_widget, 1)  # Stretch pour prendre tout l'espace restant
         
         # Les classes dérivées peuvent ajouter leurs propres actions
         self.setup_specific_toolbar()
+    
+    def on_tab_changed(self, index):
+        """Gestion du changement d'onglet"""
+        from config.constants import MODE_TRI, MODE_WORKSPACE
+        MODE_GESTION = "gestion"
         
-        self.toolbar.addSeparator()
+        # Déterminer le mode en fonction de l'index
+        if index == 0:
+            self.switch_mode(MODE_TRI)
+        elif index == 1:
+            self.switch_mode(MODE_WORKSPACE)
+        elif index == 2:
+            self.switch_mode(MODE_GESTION)
+    
+    def update_theme_button_icon(self):
+        """Mettre à jour l'icône du bouton de thème en fonction du mode actuel"""
+        if settings.dark_mode:
+            icon_path = str(Path(__file__).parent.parent.parent / 'resources' / 'icons' / 'light_mode.svg')
+            self.theme_button.setToolTip("Passer en mode clair")
+        else:
+            icon_path = str(Path(__file__).parent.parent.parent / 'resources' / 'icons' / 'dark_mode.svg')
+            self.theme_button.setToolTip("Passer en mode sombre")
+        
+        if Path(icon_path).exists():
+            self.theme_button.setIcon(QIcon(icon_path))
+            self.theme_button.setIconSize(QSize(24, 24))
     
     def setup_specific_toolbar(self):
         """
         Méthode à surcharger dans les classes dérivées pour ajouter
-        des actions spécifiques à la barre d'outils
+        des actions spécifiques à l'interface
         """
         pass
     
     def toggle_theme(self):
         """Basculer entre le mode clair et le mode sombre"""
-        settings.dark_mode = self.action_toggle_theme.isChecked()
+        settings.dark_mode = self.theme_button.isChecked()
         settings.save()
         
+        self.update_theme_button_icon()
         self.apply_theme()
     
     def apply_theme(self):
@@ -128,16 +172,21 @@ class BaseWindow(QMainWindow):
         if settings.dark_mode:
             # Mode sombre
             style_path = Path(__file__).parent.parent.parent / 'styles' / 'dark_theme.qss'
-            if style_path.exists():
-                with open(style_path, 'r') as f:
-                    app.setStyleSheet(f.read())
-                self.action_toggle_theme.setText("Mode clair")
-                print("Mode sombre activé")
         else:
             # Mode clair
+            style_path = Path(__file__).parent.parent.parent / 'styles' / 'light_theme.qss'
+        
+        if style_path.exists():
+            with open(style_path, 'r') as f:
+                app.setStyleSheet(f.read())
+            print(f"Thème {'sombre' if settings.dark_mode else 'clair'} activé")
+        else:
+            # Fallback si le fichier de style n'existe pas
             app.setStyleSheet("")
-            self.action_toggle_theme.setText("Mode sombre")
-            print("Mode clair activé")
+            print(f"Fichier de style {style_path} introuvable, utilisation du style par défaut")
+        
+        # Mise à jour de l'icône du bouton de thème
+        self.update_theme_button_icon()
     
     def closeEvent(self, event):
         """Gestion de la fermeture de l'application"""
@@ -210,7 +259,7 @@ class BaseWindow(QMainWindow):
             import traceback
             print(f"Erreur lors du basculement de mode: {e}")
             print(traceback.format_exc())
-            self.show_error("Erreur", f"Impossible de basculer vers le mode {self.next_mode}:\n{str(e)}")
+            self.show_error("Erreur", f"Impossible de basculer vers le mode {mode}:\n{str(e)}")
     
     def show_error(self, title, message):
         """Afficher un message d'erreur"""

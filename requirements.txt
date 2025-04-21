@@ -3,6 +3,7 @@ PyQt5==5.15.7
 PyQt5-Qt5>=5.15.2
 mutagen==1.46.0
 pygame==2.5.2
+lxml==5.3.2
 
 
 # Dépendances pour les améliorations futures

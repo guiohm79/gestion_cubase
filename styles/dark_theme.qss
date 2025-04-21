@@ -11,8 +11,52 @@ QMainWindow {
     background-color: #252526;
 }
 
-QLabel, QTabWidget::pane, QTabBar::tab {
+QLabel {
     color: #E0E0E0;
+}
+
+/* Onglets */
+QTabWidget::pane {
+    border: 1px solid #3E3E42;
+    background-color: #232629;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #2D2D30;
+    color: #A0A0A0;
+    border: 1px solid #3E3E42;
+    border-bottom: none;
+    padding: 8px 16px;
+    margin-right: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background-color: #007ACC;
+    color: #FFFFFF;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #3E3E42;
+    color: #E0E0E0;
+}
+
+/* Bouton de thème */
+QPushButton#theme_button {
+    background-color: transparent;
+    border: none;
+    border-radius: 16px;
+    padding: 4px;
+}
+
+QPushButton#theme_button:hover {
+    background-color: #3E3E42;
+}
+
+QPushButton#theme_button:pressed {
+    background-color: #505050;
 }
 
 /* Boutons */

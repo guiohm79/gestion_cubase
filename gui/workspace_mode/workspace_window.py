@@ -156,47 +156,54 @@ class WorkspaceWindow(BaseWindow):
         event.accept()
     
     def setup_specific_toolbar(self):
-        """Configuration spécifique de la barre d'outils"""
+        """Configuration spécifique de l'interface"""
+        # Créer une barre d'outils pour les actions spécifiques
+        toolbar = QToolBar()
+        toolbar.setIconSize(QSize(24, 24))
+        
         # Action pour choisir le dossier de travail
         self.action_select_workspace = QAction("Choisir dossier de travail...", self)
         self.action_select_workspace.triggered.connect(self.select_workspace_dir)
         self.action_select_workspace.setShortcut(QKeySequence("Ctrl+O"))
         self.action_select_workspace.setStatusTip("Sélectionner un dossier de travail")
-        self.toolbar.addAction(self.action_select_workspace)
+        toolbar.addAction(self.action_select_workspace)
         
         # Action pour vider le workspace
         self.action_reset_workspace = QAction("Vider le workspace", self)
         self.action_reset_workspace.setToolTip("Réinitialiser le workspace")
         self.action_reset_workspace.triggered.connect(self.reset_workspace)
         self.action_reset_workspace.setShortcut(QKeySequence("Ctrl+R"))
-        self.toolbar.addAction(self.action_reset_workspace)
+        toolbar.addAction(self.action_reset_workspace)
         
         # Séparateur
-        self.toolbar.addSeparator()
+        toolbar.addSeparator()
         
         # Action pour actualiser
         self.action_refresh = QAction("Actualiser", self)
         self.action_refresh.setToolTip("Actualiser le workspace")
         self.action_refresh.triggered.connect(self.refresh_workspace)
         self.action_refresh.setShortcut(QKeySequence("F5"))
-        self.toolbar.addAction(self.action_refresh)
+        toolbar.addAction(self.action_refresh)
         
         # Séparateur
-        self.toolbar.addSeparator()
+        toolbar.addSeparator()
         
         # Action pour créer un nouveau dossier
         self.action_new_folder = QAction("Nouveau dossier", self)
         self.action_new_folder.setToolTip("Créer un nouveau dossier")
         self.action_new_folder.triggered.connect(lambda: self.create_new_folder(self.file_tree_right.get_selected_path() or self.workspace_dir))
         self.action_new_folder.setShortcut(QKeySequence("Ctrl+Shift+N"))
-        self.toolbar.addAction(self.action_new_folder)
+        toolbar.addAction(self.action_new_folder)
         
         # Action pour ouvrir le projet sélectionné dans Cubase
         self.action_open_in_cubase = QAction("Ouvrir dans Cubase", self)
         self.action_open_in_cubase.setToolTip("Ouvrir le projet sélectionné dans Cubase")
         self.action_open_in_cubase.triggered.connect(self.open_selected_in_cubase)
         self.action_open_in_cubase.setShortcut(QKeySequence("Ctrl+P"))
-        self.toolbar.addAction(self.action_open_in_cubase)
+        toolbar.addAction(self.action_open_in_cubase)
+        
+        # Ajouter la barre d'outils au layout de contenu
+        self.content_layout.addWidget(toolbar)
     
     def open_vsti_manager_dialog(self):
         from PyQt5.QtWidgets import (
