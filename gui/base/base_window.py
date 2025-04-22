@@ -40,6 +40,7 @@ class BaseWindow(QMainWindow):
         # Layout principal
         self.main_layout = QVBoxLayout(self.central_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)  # Réduire l'espacement entre les widgets
         
         # Système d'onglets pour les modes
         self.setup_tabs()
@@ -58,6 +59,7 @@ class BaseWindow(QMainWindow):
         self.tabs_container = QWidget()
         tabs_layout = QHBoxLayout(self.tabs_container)
         tabs_layout.setContentsMargins(0, 0, 0, 0)
+        tabs_layout.setSpacing(0)  # Réduire l'espacement horizontal
         
         # Création du widget d'onglets
         self.mode_tabs = QTabWidget()
@@ -119,6 +121,8 @@ class BaseWindow(QMainWindow):
         # Ajouter un widget pour contenir le contenu spécifique à chaque mode
         self.content_widget = QWidget()
         self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(2, 2, 2, 2)  # Marges minimales
+        self.content_layout.setSpacing(2)  # Espacement minimal entre les widgets
         self.main_layout.addWidget(self.content_widget, 1)  # Stretch pour prendre tout l'espace restant
         
         # Les classes dérivées peuvent ajouter leurs propres actions
@@ -165,6 +169,11 @@ class BaseWindow(QMainWindow):
         self.update_theme_button_icon()
         self.apply_theme()
     
+    def update_toolbar_icons(self):
+        """Mettre à jour les icônes de la barre d'outils en fonction du thème"""
+        # Cette méthode sera surchargée dans les classes dérivées si nécessaire
+        pass
+    
     def apply_theme(self):
         """Appliquer le thème actuel"""
         app = QApplication.instance()
@@ -187,6 +196,9 @@ class BaseWindow(QMainWindow):
         
         # Mise à jour de l'icône du bouton de thème
         self.update_theme_button_icon()
+        
+        # Mise à jour des icônes de la barre d'outils
+        self.update_toolbar_icons()
     
     def closeEvent(self, event):
         """Gestion de la fermeture de l'application"""

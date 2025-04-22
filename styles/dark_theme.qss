@@ -52,7 +52,7 @@ QPushButton#theme_button {
 }
 
 QPushButton#theme_button:hover {
-    background-color: #3E3E42;
+    background-color:rgb(214, 214, 240);
 }
 
 QPushButton#theme_button:pressed {
@@ -76,6 +76,31 @@ QPushButton:pressed {
 QPushButton:disabled {
     background-color: #2D2D30;
     color: #656565;
+}
+
+/* Barre d'outils */
+QToolBar {
+    background-color: #2D2D30;
+    border: 1px solid #3E3E42;
+    border-radius: 3px;
+    spacing: 3px;
+}
+
+QToolBar QToolButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 3px;
+    color: #E0E0E0;
+}
+
+QToolBar QToolButton:hover {
+    background-color: #3E3E42;
+    border: 1px solid #555555;
+}
+
+QToolBar QToolButton:pressed {
+    background-color: #007ACC;
 }
 
 /* Groupes */

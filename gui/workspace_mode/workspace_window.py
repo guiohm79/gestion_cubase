@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTextEdit, QTabWidget, QTreeWidget, QTreeWidgetItem, QSplitter, QFileDialog, QDialog, QMessageBox, QToolButton, QAbstractItemView, QTableWidget, QTableWidgetItem, QHeaderView,
     QComboBox, QAction, QLineEdit, QMenu, QTextEdit, QTabWidget,
     QInputDialog, QToolBar, QShortcut, QFrame, QToolButton, QProgressBar,
-    QGroupBox, QCheckBox
+    QGroupBox, QCheckBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, QDir, QObject
 from PyQt5.QtGui import QIcon, QKeySequence
@@ -157,53 +157,86 @@ class WorkspaceWindow(BaseWindow):
     
     def setup_specific_toolbar(self):
         """Configuration spécifique de l'interface"""
-        # Créer une barre d'outils pour les actions spécifiques
-        toolbar = QToolBar()
-        toolbar.setIconSize(QSize(24, 24))
+        # Créer une barre d'outils moderne pour les actions spécifiques
+        self.toolbar = QToolBar()
+        self.toolbar.setIconSize(QSize(24, 24))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)  # Afficher texte à côté des icônes
+        self.toolbar.setMovable(False)  # Empêcher le déplacement de la barre d'outils
         
+        # Groupe 1: Actions de gestion du workspace
         # Action pour choisir le dossier de travail
-        self.action_select_workspace = QAction("Choisir dossier de travail...", self)
+        self.action_select_workspace = QAction("Ouvrir workspace", self)
         self.action_select_workspace.triggered.connect(self.select_workspace_dir)
         self.action_select_workspace.setShortcut(QKeySequence("Ctrl+O"))
         self.action_select_workspace.setStatusTip("Sélectionner un dossier de travail")
-        toolbar.addAction(self.action_select_workspace)
-        
-        # Action pour vider le workspace
-        self.action_reset_workspace = QAction("Vider le workspace", self)
-        self.action_reset_workspace.setToolTip("Réinitialiser le workspace")
-        self.action_reset_workspace.triggered.connect(self.reset_workspace)
-        self.action_reset_workspace.setShortcut(QKeySequence("Ctrl+R"))
-        toolbar.addAction(self.action_reset_workspace)
-        
-        # Séparateur
-        toolbar.addSeparator()
+        self.toolbar.addAction(self.action_select_workspace)
         
         # Action pour actualiser
         self.action_refresh = QAction("Actualiser", self)
-        self.action_refresh.setToolTip("Actualiser le workspace")
+        self.action_refresh.setToolTip("Actualiser le contenu du workspace")
         self.action_refresh.triggered.connect(self.refresh_workspace)
         self.action_refresh.setShortcut(QKeySequence("F5"))
-        toolbar.addAction(self.action_refresh)
+        self.toolbar.addAction(self.action_refresh)
         
         # Séparateur
-        toolbar.addSeparator()
+        self.toolbar.addSeparator()
         
-        # Action pour créer un nouveau dossier
-        self.action_new_folder = QAction("Nouveau dossier", self)
-        self.action_new_folder.setToolTip("Créer un nouveau dossier")
-        self.action_new_folder.triggered.connect(lambda: self.create_new_folder(self.file_tree_right.get_selected_path() or self.workspace_dir))
-        self.action_new_folder.setShortcut(QKeySequence("Ctrl+Shift+N"))
-        toolbar.addAction(self.action_new_folder)
-        
+        # Groupe 2: Actions sur les fichiers
         # Action pour ouvrir le projet sélectionné dans Cubase
         self.action_open_in_cubase = QAction("Ouvrir dans Cubase", self)
         self.action_open_in_cubase.setToolTip("Ouvrir le projet sélectionné dans Cubase")
         self.action_open_in_cubase.triggered.connect(self.open_selected_in_cubase)
         self.action_open_in_cubase.setShortcut(QKeySequence("Ctrl+P"))
-        toolbar.addAction(self.action_open_in_cubase)
+        self.toolbar.addAction(self.action_open_in_cubase)
         
-        # Ajouter la barre d'outils au layout de contenu
-        self.content_layout.addWidget(toolbar)
+        # Action pour créer un nouveau dossier
+        self.action_new_folder = QAction("Nouveau dossier", self)
+        self.action_new_folder.setToolTip("Créer un nouveau dossier dans l'emplacement sélectionné")
+        self.action_new_folder.triggered.connect(lambda: self.create_new_folder(self.file_tree_right.get_selected_path() or self.workspace_dir))
+        self.action_new_folder.setShortcut(QKeySequence("Ctrl+Shift+N"))
+        self.toolbar.addAction(self.action_new_folder)
+        
+        # Séparateur
+        self.toolbar.addSeparator()
+        
+        # Groupe 3: Actions avancées
+        # Action pour vider le workspace (avec icône d'avertissement)
+        self.action_reset_workspace = QAction("Vider workspace", self)
+        self.action_reset_workspace.setToolTip("Réinitialiser le contenu du workspace (attention: action destructive)")
+        self.action_reset_workspace.triggered.connect(self.reset_workspace)
+        self.action_reset_workspace.setShortcut(QKeySequence("Ctrl+R"))
+        self.toolbar.addAction(self.action_reset_workspace)
+        
+        # Mettre à jour les icônes en fonction du thème actuel
+        self.update_toolbar_icons()
+        
+        # Ajouter un spacer pour pousser les éléments suivants à droite
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.toolbar.addWidget(spacer)
+        
+        # Ajouter la barre d'outils au layout de contenu (sous les onglets)
+        self.content_layout.insertWidget(0, self.toolbar)
+    
+    def update_toolbar_icons(self):
+        """Mettre à jour les icônes de la barre d'outils en fonction du thème"""
+        # Vérifier si les attributs nécessaires existent
+        if not hasattr(self, 'action_select_workspace') or not hasattr(self, 'action_refresh'):
+            return
+            
+        # Chemin vers les icônes
+        icon_path = str(Path(__file__).parent.parent.parent / 'resources' / 'icons')
+        
+        # Choisir les icônes en fonction du thème
+        from config.settings import settings
+        icon_suffix = "_light" if settings.dark_mode else ""
+        
+        # Mettre à jour les icônes
+        self.action_select_workspace.setIcon(QIcon(f"{icon_path}/folder_open{icon_suffix}.svg"))
+        self.action_refresh.setIcon(QIcon(f"{icon_path}/refresh{icon_suffix}.svg"))
+        self.action_open_in_cubase.setIcon(QIcon(f"{icon_path}/play_arrow{icon_suffix}.svg"))
+        self.action_new_folder.setIcon(QIcon(f"{icon_path}/create_new_folder{icon_suffix}.svg"))
+        self.action_reset_workspace.setIcon(QIcon(f"{icon_path}/delete{icon_suffix}.svg"))
     
     def open_vsti_manager_dialog(self):
         from PyQt5.QtWidgets import (
@@ -385,12 +418,14 @@ class WorkspaceWindow(BaseWindow):
             self.lbl_workspace_path.setText(f"Dossier de travail : {self.workspace_dir}")
         else:
             self.lbl_workspace_path.setText("Dossier de travail : (aucun)")
+        self.lbl_workspace_path.setStyleSheet("padding: 2px; margin: 0px;")  # Réduire l'espace
         self.main_layout.addWidget(self.lbl_workspace_path)
         
-
         # Groupe pour les résultats
         results_group = QGroupBox("Projets")
         results_layout = QVBoxLayout(results_group)
+        results_layout.setContentsMargins(4, 8, 4, 4)  # Réduire les marges internes
+        results_layout.setSpacing(2)  # Réduire l'espacement entre les widgets
         
         # Contrôles de filtrage et tri
         filter_layout = QHBoxLayout()
@@ -435,14 +470,19 @@ class WorkspaceWindow(BaseWindow):
         # Détails du projet sélectionné
         details_group = QGroupBox("Détails du projet")
         details_layout = QVBoxLayout(details_group)
+        details_layout.setContentsMargins(4, 8, 4, 4)  # Réduire les marges internes
+        details_layout.setSpacing(2)  # Réduire l'espacement entre les widgets
         
         # Arborescences de fichiers avec étiquettes descriptives
         # Conteneur principal pour les deux arborescences
         trees_container = QWidget()
         trees_layout = QVBoxLayout(trees_container)
+        trees_layout.setContentsMargins(0, 0, 0, 0)  # Supprimer les marges
+        trees_layout.setSpacing(2)  # Réduire l'espacement entre les widgets
         
         # Étiquette pour les arborescences
         trees_label = QLabel("<b>Navigation des fichiers</b>")
+        trees_label.setStyleSheet("padding: 0px; margin: 0px;")  # Supprimer l'espace autour du label
         trees_layout.addWidget(trees_label)
         
         # Splitter horizontal pour les deux arborescences
@@ -452,7 +492,9 @@ class WorkspaceWindow(BaseWindow):
         left_tree_container = QWidget()
         left_tree_layout = QVBoxLayout(left_tree_container)
         left_tree_layout.setContentsMargins(0, 0, 0, 0)
+        left_tree_layout.setSpacing(1)  # Espacement minimal
         left_tree_label = QLabel("<b>Navigation globale</b> - Dossier de travail complet")
+        left_tree_label.setStyleSheet("padding: 0px; margin: 0px;")
         
         # Historique de navigation pour l'arborescence gauche (sans interface visible)
         # Ces variables sont conservées pour les fonctionnalités d'historique
@@ -488,7 +530,9 @@ class WorkspaceWindow(BaseWindow):
         right_tree_container = QWidget()
         right_tree_layout = QVBoxLayout(right_tree_container)
         right_tree_layout.setContentsMargins(0, 0, 0, 0)
+        right_tree_layout.setSpacing(1)  # Espacement minimal
         right_tree_label = QLabel("<b>Détails du projet</b> - Contenu du projet sélectionné")
+        right_tree_label.setStyleSheet("padding: 0px; margin: 0px;")
         
         # Historique de navigation pour l'arborescence droite (sans interface visible)
         # Ces variables sont conservées pour les fonctionnalités d'historique
