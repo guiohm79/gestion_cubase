@@ -5449,7 +5449,10 @@
                <item>
                   <string name="Name" value="Move Selection to New TrackVersion"/>
                </item>
-            </list>
+               <item>
+                  <string name="Name" value="macro creer depuis cubase"/>
+               </item>
+            <item><string name="Name" value="macro creer depuis app"/></item></list>
          </item>
          <item>
             <string name="Name" value="MIDI Remote"/>
@@ -7265,6 +7268,27 @@
       </list>
       <list name="Macros" type="list">
          <item>
+            <string name="Name" value="testmacro"/>
+            <list name="Commands" type="list">
+               <item>
+                  <string name="Category" value="Edit"/>
+                  <string name="Name" value="Select All"/>
+               </item>
+               <item>
+                  <string name="Category" value="Transport"/>
+                  <string name="Name" value="Locators to Selection"/>
+               </item>
+               <item>
+                  <string name="Category" value="Edit"/>
+                  <string name="Name" value="Select None"/>
+               </item>
+               <item>
+                  <string name="Category" value="File"/>
+                  <string name="Name" value="Export Audio Mixdown"/>
+               </item>
+            </list>
+         </item>
+         <item>
             <string name="Name" value="Selected Tracks to new Folder and Add Group Channel"/>
             <list name="Commands" type="list">
                <item>
@@ -7336,23 +7360,6 @@
                </item>
             </list>
          </item>
-            <item>
-      <string name="Name" value="testmacro"/>
-      <list name="Commands" type="list">
-         <item>
-            <string name="Category" value="AddTrack"/>
-            <string name="Name" value="Drum"/>
-         </item>
-         <item>
-            <string name="Category" value="AddTrack"/>
-            <string name="Name" value="Chord"/>
-         </item>
-         <item>
-            <string name="Category" value="AddTrack"/>
-            <string name="Name" value="Audio"/>
-         </item>
-      </list>
-   </item>
          <item>
             <string name="Name" value="Move Selection to New TrackVersion"/>
             <list name="Commands" type="list">
@@ -7374,6 +7381,19 @@
                </item>
             </list>
          </item>
+         <item>
+            <string name="Name" value="macro creer depuis cubase"/>
+            <list name="Commands" type="list">
+               <item>
+                  <string name="Category" value="Edit"/>
+                  <string name="Name" value="Move to Front"/>
+               </item>
+               <item>
+                  <string name="Category" value="Edit"/>
+                  <string name="Name" value="Read"/>
+               </item>
+            </list>
+         </item>
       </list>
-   </member>
+   <item><string name="Name" value="macro creer depuis app"/><list name="Commands" type="list"><item><string name="Category" value="AddTrack"/><string name="Name" value="Chord"/></item></list></item></member>
 </KeyCommandsPreset>

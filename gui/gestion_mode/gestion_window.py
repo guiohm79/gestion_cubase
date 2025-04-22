@@ -666,7 +666,7 @@ class GestionWindow(BaseWindow):
     def add_macro_to_xml(self, macro_name, commands):
         """Ajoute une nouvelle macro dans le fichier XML"""
         try:
-            # 1. Ajouter la macro à la liste des macros
+            # 1. Ajouter la macro à la liste des macros dans la catégorie Macro
             # Chercher la catégorie Macro
             xpath_query = f".//item[string[@name='Name'][@value='Macro']]"
             macro_category = self.xml_root.xpath(xpath_query)
@@ -695,11 +695,19 @@ class GestionWindow(BaseWindow):
                 macro_item = lxml_etree.SubElement(commands_list, "item")
                 lxml_etree.SubElement(macro_item, "string", name="Name", value=macro_name)
             
-            # 2. Créer la définition de la macro
+            # 2. Créer la définition de la macro dans la liste des macros
             preset_elem = self.xml_root.xpath("./member[@name='Preset']")[0]
             
-            # Créer l'élément item pour la macro
-            macro_elem = lxml_etree.SubElement(preset_elem, "item")
+            # Chercher ou créer la liste des macros
+            macros_list = preset_elem.xpath("./list[@name='Macros']") 
+            if not macros_list:
+                # La liste des macros n'existe pas, la créer
+                macros_list = lxml_etree.SubElement(preset_elem, "list", name="Macros", type="list")
+            else:
+                macros_list = macros_list[0]
+            
+            # Créer l'élément item pour la macro dans la liste des macros
+            macro_elem = lxml_etree.SubElement(macros_list, "item")
             lxml_etree.SubElement(macro_elem, "string", name="Name", value=macro_name)
             
             # Créer la liste des commandes
@@ -724,7 +732,7 @@ class GestionWindow(BaseWindow):
     def remove_macro_from_xml(self, macro_name):
         """Supprime une macro du fichier XML"""
         try:
-            # 1. Supprimer la macro de la liste des macros
+            # 1. Supprimer la macro de la liste des macros dans la catégorie Macro
             xpath_query = f".//item[string[@name='Name'][@value='Macro']]"
             macro_category = self.xml_root.xpath(xpath_query)
             
@@ -743,15 +751,20 @@ class GestionWindow(BaseWindow):
             parent = macro_item.getparent()
             parent.remove(macro_item)
             
-            # 2. Supprimer la définition de la macro
-            macro_def_xpath = f".//item[string[@name='Name'][@value='{macro_name}']][list[@name='Commands']]"
-            macro_def_items = self.xml_root.xpath(macro_def_xpath)
+            # 2. Supprimer la définition de la macro dans la liste des macros
+            preset_elem = self.xml_root.xpath("./member[@name='Preset']")[0]
+            macros_list = preset_elem.xpath("./list[@name='Macros']")
             
-            if macro_def_items:
-                # Supprimer la définition
-                macro_def = macro_def_items[0]
-                parent = macro_def.getparent()
-                parent.remove(macro_def)
+            if macros_list:
+                # Trouver la macro dans la liste des macros
+                macro_xpath = f"./item[string[@name='Name'][@value='{macro_name}']]"
+                macro_items = macros_list[0].xpath(macro_xpath)
+                
+                if macro_items:
+                    # Supprimer la macro
+                    macro_item = macro_items[0]
+                    parent = macro_item.getparent()
+                    parent.remove(macro_item)
             
             # Le fichier est maintenant modifié, activer la sauvegarde
             self.action_save.setEnabled(True)
@@ -766,21 +779,28 @@ class GestionWindow(BaseWindow):
     def update_macro_in_xml(self, macro_name, commands):
         """Met à jour une macro dans le fichier XML"""
         try:
-            # Chercher la définition de la macro
-            macro_def_xpath = f".//item[string[@name='Name'][@value='{macro_name}']][list[@name='Commands']]"
-            macro_def_items = self.xml_root.xpath(macro_def_xpath)
-            
-            if macro_def_items:
-                # Supprimer l'ancienne définition
-                macro_def = macro_def_items[0]
-                parent = macro_def.getparent()
-                parent.remove(macro_def)
-            
-            # Créer une nouvelle définition de macro
+            # Chercher la définition de la macro dans la liste des macros
             preset_elem = self.xml_root.xpath("./member[@name='Preset']")[0]
+            macros_list = preset_elem.xpath("./list[@name='Macros']")
             
-            # Créer l'élément item pour la macro
-            macro_elem = lxml_etree.SubElement(preset_elem, "item")
+            if not macros_list:
+                # La liste des macros n'existe pas, la créer
+                macros_list = lxml_etree.SubElement(preset_elem, "list", name="Macros", type="list")
+            else:
+                macros_list = macros_list[0]
+                
+                # Trouver la macro dans la liste des macros
+                macro_xpath = f"./item[string[@name='Name'][@value='{macro_name}']]"
+                macro_items = macros_list.xpath(macro_xpath)
+                
+                if macro_items:
+                    # Supprimer l'ancienne définition
+                    macro_item = macro_items[0]
+                    parent = macro_item.getparent()
+                    parent.remove(macro_item)
+            
+            # Créer l'élément item pour la macro dans la liste des macros
+            macro_elem = lxml_etree.SubElement(macros_list, "item")
             lxml_etree.SubElement(macro_elem, "string", name="Name", value=macro_name)
             
             # Créer la liste des commandes
